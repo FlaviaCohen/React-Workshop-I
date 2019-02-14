@@ -56,23 +56,29 @@ function httpGet(url) {
     });
   });
 }
+function showMetadata(metadata,res) {
+  const pic = metadata.common.picture[0]
+  pic ? res
+    .set('Content-Type', mime.lookup(pic.format))
+    .send(pic.data)
+    : res.redirect('/default-album.jpg')
+}
 
 router.get('/:songId/image', function (req, res, next) {
-  httpGet(req.song.url, { native: true }).then(metadata => {
-    const mimeType = metadata.headers['content-type'];
-    // console.log('Parsing: ' + mimeType);
-    return mm.parseStream(metadata, mimeType, { native: true })
-      .then(metadata => {
-        // console.log(util.inspect(metadata, {showHidden: false, depth: null}));
-        const pic = metadata.common.picture[0]
-        pic ? res
-          .set('Content-Type', mime.lookup(pic.format))
-          .send(pic.data)
-          : res.redirect('/default-album.jpg')
-      });
-  }).catch(function (err) {
-    console.error(err.message);
-  });
+  const parsed = urlParse(req.song.url)
+  if (parsed.protocol === null) {
+    return mm.parseFile(parsed.path, { native: true })
+      .then(metadata => { showMetadata(metadata,res) })
+  }else {
+    httpGet(req.song.url, { native: true }).then(metadata => {
+      const mimeType = metadata.headers['content-type'];
+      // console.log('Parsing: ' + mimeType);
+      return mm.parseStream(metadata, mimeType, { native: true })
+        .then(metadata => { showMetadata(metadata,res) });
+    }).catch(function (err) {
+      console.error(err.message);
+    });
+  }
 });
 
 router.get('/:songId/audio', function (req, res, next) {

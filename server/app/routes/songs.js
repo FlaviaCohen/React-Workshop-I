@@ -69,6 +69,7 @@ router.get('/:songId/image', function (req, res, next) {
   if (parsed.protocol === null) {
     return mm.parseFile(parsed.path, { native: true })
       .then(metadata => { showMetadata(metadata,res) })
+      .catch(()=>res.redirect('/default-album.jpg'))
   }else {
     httpGet(req.song.url, { native: true }).then(metadata => {
       const mimeType = metadata.headers['content-type'];
